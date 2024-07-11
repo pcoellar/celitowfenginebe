@@ -21,6 +21,7 @@ import { CommonModule } from './common/common.module';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_NAME'),
+        ssl: true,
         entities: [
           ProcessInstanceEntity,
           ProcessInstanceActivityEntity,
