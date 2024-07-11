@@ -4,7 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WfengineModule } from './wfengine/wfengine.module';
 import { ProcessInstanceEntity } from './wfengine/entities/data-entities/process-instance.data.entity';
 import { ProcessInstanceActivityEntity } from './wfengine/entities/data-entities/process-instance-activity.data.entity';
-import { PendingActionEntity } from './wfengine/entities/data-entities/pending-action.data.entity';
 import { ExecutionQueueEntity } from './wfengine/entities/data-entities/execution-queue.data.entity';
 import { CommonModule } from './common/common.module';
 
@@ -25,7 +24,6 @@ import { CommonModule } from './common/common.module';
         entities: [
           ProcessInstanceEntity,
           ProcessInstanceActivityEntity,
-          PendingActionEntity,
           ExecutionQueueEntity,
         ],
         synchronize: true,

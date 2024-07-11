@@ -213,7 +213,7 @@ export class EngineManagerService implements IEngineManagerService {
           start: new Date(),
           status: Status.Pending,
           processInstance: this.process_instance,
-          pendingAction: null,
+          pendingData: null,
         });
       const node: ProcessVersionNode = this.getNode(
         nodesToExecute[0].nodeId,

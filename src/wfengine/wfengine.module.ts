@@ -3,7 +3,6 @@ import { ProcessInstanceEntity } from './entities/data-entities/process-instance
 import { ProcessInstanceActivityEntity } from './entities/data-entities/process-instance-activity.data.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExecutionQueueEntity } from './entities/data-entities/execution-queue.data.entity';
-import { PendingActionEntity } from './entities/data-entities/pending-action.data.entity';
 import { CommonModule } from 'src/common/common.module';
 import { ProcessInstanceController } from './presentation-layer/controllers/process-instance.controller';
 import { ProcessInstanceActivityController } from './presentation-layer/controllers/process-instance-activity.controller';
@@ -52,7 +51,6 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
       ProcessInstanceEntity,
       ProcessInstanceActivityEntity,
       ExecutionQueueEntity,
-      PendingActionEntity,
     ]),
     CommonModule,
   ],
