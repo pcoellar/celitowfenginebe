@@ -25,7 +25,8 @@ import { EngineManagerService } from './business-logic-layer/services/workflow/e
 import { NodeExecutionAsignUser } from './business-logic-layer/services/workflow/nodes/node-execution-asign-user.service';
 import { NodeExecutionEventUndefined } from './business-logic-layer/services/workflow/nodes/node-execution-event-undefined.service';
 import { NodeExecutionScript } from './business-logic-layer/services/workflow/nodes/node-execution-script.service';
-import { NodeExecutionSignal } from './business-logic-layer/services/workflow/nodes/node-execution-signal.service';
+import { NodeExecutionSignalThrow } from './business-logic-layer/services/workflow/nodes/node-execution-signal-throw.service';
+import { NodeExecutionSignalCatch } from './business-logic-layer/services/workflow/nodes/node-execution-signal-catch.service';
 import { NodeExecutionTaskUndefined } from './business-logic-layer/services/workflow/nodes/node-execution-task-undefined.service';
 import { NodeExecutionTimer } from './business-logic-layer/services/workflow/nodes/node-execution-timer.service';
 import { IGetCountProcessInstanceVersionService } from './business-logic-layer/usecases/interfaces/process-instance/get-count-process-instance-version.interface';
@@ -122,7 +123,8 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
     NodeExecutionAsignUser,
     NodeExecutionEventUndefined,
     NodeExecutionScript,
-    NodeExecutionSignal,
+    NodeExecutionSignalThrow,
+    NodeExecutionSignalCatch,
     NodeExecutionTaskUndefined,
     NodeExecutionTimer,
     {
@@ -131,14 +133,16 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
         nodeExecutionAsignUser: NodeExecutionAsignUser,
         nodeExecutionEventUndefined: NodeExecutionEventUndefined,
         nodeExecutionScript: NodeExecutionScript,
-        nodeExecutionSignal: NodeExecutionSignal,
+        NodeExecutionSignalThrow: NodeExecutionSignalThrow,
+        NodeExecutionSignalCatch: NodeExecutionSignalCatch,
         nodeExecutionTaskUndefined: NodeExecutionTaskUndefined,
         nodeExecutionTimer: NodeExecutionTimer,
       ) => [
         nodeExecutionAsignUser,
         nodeExecutionEventUndefined,
         nodeExecutionScript,
-        nodeExecutionSignal,
+        NodeExecutionSignalThrow,
+        NodeExecutionSignalCatch,
         nodeExecutionTaskUndefined,
         nodeExecutionTimer,
       ],
@@ -146,7 +150,8 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
         NodeExecutionAsignUser,
         NodeExecutionEventUndefined,
         NodeExecutionScript,
-        NodeExecutionSignal,
+        NodeExecutionSignalThrow,
+        NodeExecutionSignalCatch,
         NodeExecutionTaskUndefined,
         NodeExecutionTimer,
       ],

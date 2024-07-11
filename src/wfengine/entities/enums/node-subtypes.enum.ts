@@ -3,5 +3,6 @@ export enum NodeSubTypes {
   User = 'user',
   Script = 'script',
   Timer = 'timer',
-  Signal = 'signal',
+  SignalThrow = 'signal_throw',
+  SignalCatch = 'signal_catch',
 }

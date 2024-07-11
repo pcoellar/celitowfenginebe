@@ -14,7 +14,6 @@ import { ConfigService } from '@nestjs/config';
 import { Process } from 'src/wfengine/entities/service-entities/workflow/process.entity';
 import { IProcessInstanceRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/process-instance-repository.interface';
 import { v4 as uuidv4 } from 'uuid';
-import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-result.service.entity';
 import { NodeExecutionResult } from 'src/wfengine/entities/enums/node-execution-result.enum';
 import { ExecutionQueueEntity } from 'src/wfengine/entities/data-entities/execution-queue.data.entity';
 import { IProcessInstanceActivityRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/process-instance-activity-repository.interface';
@@ -25,6 +24,7 @@ import { EngineEventRequestDto } from 'src/wfengine/entities/dto-entities/engine
 import { EngineResponseParser } from 'src/wfengine/entities/dto-entities/parsers/engine-response.dto.parser';
 import { EnginePauseRequestDto } from 'src/wfengine/entities/dto-entities/engine-pause-request.dto.entity';
 import { EngineContinueRequestDto } from 'src/wfengine/entities/dto-entities/engine-continue-request.dto.entity';
+import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
 
 @Injectable()
 export class EngineManagerService implements IEngineManagerService {
@@ -200,6 +200,10 @@ export class EngineManagerService implements IEngineManagerService {
       });
     let processInstanceStatus = Status.Completed;
     while (nodesToExecute.length > 0) {
+      const node: ProcessVersionNode = this.getNode(
+        nodesToExecute[0].nodeId,
+        this.processVersion,
+      );
       const processInstanceActivity: ProcessInstanceActivityEntity =
         await this.processInstanceActivityRepositoryService.create({
           id: uuidv4(),
@@ -207,18 +211,14 @@ export class EngineManagerService implements IEngineManagerService {
           start: new Date(),
           status: Status.Pending,
           processInstance: this.processInstance,
-          pendingData: null,
+          nodeData: node.data,
         });
-      const node: ProcessVersionNode = this.getNode(
-        nodesToExecute[0].nodeId,
-        this.processVersion,
-      );
       let executed = false;
       for (let i = 0; i < this.nodesExecutors.length; i++) {
         if (this.nodesExecutors[i].canExecute(node.type, node.subtype)) {
-          const executionInfo: NodeExecutionOutInfo = this.nodesExecutors[
+          const executionInfo: NodeExecutionOutInfo = await this.nodesExecutors[
             i
-          ].execute(node.data, {});
+          ].execute(node.data, {}, this.processInstance.id, node.id);
           if (executionInfo.result === NodeExecutionResult.Error) {
             throw new Error(
               `Error while runnint node: ${node.id} of type:${node.type} and subtype:${node.subtype}`,

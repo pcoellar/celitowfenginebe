@@ -19,5 +19,5 @@ export class ProcessInstanceActivityEntity extends AuditableDataEntity {
   @Column('varchar', { length: 20, nullable: false })
   status: Status;
   @Column('json', { nullable: true })
-  pendingData: any;
+  nodeData: any;
 }

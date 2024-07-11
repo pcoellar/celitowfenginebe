@@ -3,27 +3,34 @@ import { INodeExecution } from '../interfaces/node-execution.interface';
 import { NodeExecutionResult } from 'src/wfengine/entities/enums/node-execution-result.enum';
 import { NodeSubTypes } from 'src/wfengine/entities/enums/node-subtypes.enum';
 import { NodeTypes } from 'src/wfengine/entities/enums/node-types.enum';
-import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-result.service.entity';
+import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
 
 @Injectable()
-export class NodeExecutionSignal implements INodeExecution {
+export class NodeExecutionSignalCatch implements INodeExecution {
   canExecute(type: NodeTypes, subtype: NodeSubTypes): boolean {
-    if (type === NodeTypes.Event && subtype === NodeSubTypes.Signal) {
+    if (type === NodeTypes.Event && subtype === NodeSubTypes.SignalCatch) {
       return true;
     }
     return false;
   }
 
-  execute(nodeData: any, processData: any): NodeExecutionOutInfo {
+  async execute(
+    nodeData: any,
+    processData: any,
+    instanceId: string,
+    nodeId: string,
+  ): Promise<NodeExecutionOutInfo> {
     const outInfo = new NodeExecutionOutInfo();
     console.log(
-      'Node execution signal. nodeData: ' +
+      'Node execution task user. nodeData: ' +
         JSON.stringify(nodeData) +
         ' processData: ' +
         JSON.stringify(processData),
+      ' instanceId: ' + instanceId + ' nodeID: ' + nodeId,
     );
-    outInfo.result = NodeExecutionResult.Finished;
+    outInfo.result = NodeExecutionResult.Idle;
     outInfo.processData = processData;
+    outInfo.nodeData = nodeData;
     return outInfo;
   }
 }

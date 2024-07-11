@@ -16,4 +16,16 @@ export class ApiService implements IApiService {
       throw error;
     }
   }
+  async post(url: string, body: any): Promise<any> {
+    try {
+      const response = await axios.post(url, body);
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Error posting data. Url: ' + url + ' Error:',
+        error.message,
+      );
+      throw error;
+    }
+  }
 }
