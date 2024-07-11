@@ -14,16 +14,16 @@ export class NodeExecutionTimer implements INodeExecution {
     return false;
   }
 
-  execute(node_data: any, process_data: any): NodeExecutionOutInfo {
+  execute(nodeData: any, processData: any): NodeExecutionOutInfo {
     const outInfo = new NodeExecutionOutInfo();
     console.log(
-      'Node execution timer. node_data: ' +
-        JSON.stringify(node_data) +
-        ' process_data: ' +
-        JSON.stringify(process_data),
+      'Node execution timer. nodeData: ' +
+        JSON.stringify(nodeData) +
+        ' processData: ' +
+        JSON.stringify(processData),
     );
     outInfo.result = NodeExecutionResult.Idle;
-    outInfo.process_data = process_data;
+    outInfo.processData = processData;
     return outInfo;
   }
 }

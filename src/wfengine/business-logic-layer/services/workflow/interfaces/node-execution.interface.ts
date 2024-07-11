@@ -4,5 +4,5 @@ import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/wor
 
 export interface INodeExecution {
   canExecute(type: NodeTypes, subtype: NodeSubTypes): boolean;
-  execute(node_data: any, process_data: any): NodeExecutionOutInfo;
+  execute(nodeData: any, processData: any): NodeExecutionOutInfo;
 }

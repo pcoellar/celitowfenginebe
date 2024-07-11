@@ -38,35 +38,32 @@ export class EngineManagerService implements IEngineManagerService {
     private readonly configService: ConfigService,
   ) {}
 
-  private process_instance: ProcessInstanceEntity;
-  private process_instance_activities: ProcessInstanceActivityEntity[];
-  private process_version: ProcessVersion;
+  private processInstance: ProcessInstanceEntity;
+  private processInstanceActivities: ProcessInstanceActivityEntity[];
+  private processVersion: ProcessVersion;
   private designerBaseUrl: string = this.configService.get(
     'WFDESIGNER_BASE_URL',
   );
 
-  getNode(
-    node_id: string,
-    process_version: ProcessVersion,
-  ): ProcessVersionNode {
-    const nodes: ProcessVersionNode[] = process_version.nodes.filter(
-      (x) => x.id === node_id,
+  getNode(nodeId: string, processVersion: ProcessVersion): ProcessVersionNode {
+    const nodes: ProcessVersionNode[] = processVersion.nodes.filter(
+      (x) => x.id === nodeId,
     );
     return nodes[0];
   }
 
   getNextNodes(
-    node_id: string,
-    process_version: ProcessVersion,
+    nodeId: string,
+    processVersion: ProcessVersion,
   ): ProcessVersionNode[] {
     const nodes: ProcessVersionNode[] = [];
     const sequenceFlows: ProcessVersionSequenceFlow[] =
-      process_version.sequenceFlows.filter((x) => x.initNode === node_id);
+      processVersion.sequenceFlows.filter((x) => x.initNode === nodeId);
     if (sequenceFlows && sequenceFlows.length > 0) {
       for (let i = 0; i < sequenceFlows.length; i++) {
         const node: ProcessVersionNode = this.getNode(
           sequenceFlows[i].endNode,
-          process_version,
+          processVersion,
         );
         nodes.push(node);
       }
@@ -75,19 +72,19 @@ export class EngineManagerService implements IEngineManagerService {
   }
 
   async start(request: EngineStartRequestDto): Promise<EngineResponseDto> {
-    this.process_instance_activities = [];
+    this.processInstanceActivities = [];
     const process: Process = await this.apiService.get(
       `${this.designerBaseUrl}processes/${request.processId}`,
     );
-    const process_version_id: string = process.currentVersion;
-    this.process_version = await this.apiService.get(
-      `${this.designerBaseUrl}processes_version/${process_version_id}`,
+    const processVersionId: string = process.currentVersion;
+    this.processVersion = await this.apiService.get(
+      `${this.designerBaseUrl}processes_version/${processVersionId}`,
     );
-    const new_process_instance_id: string = uuidv4();
-    this.process_instance = await this.processInstanceRepositoryService.create({
-      id: new_process_instance_id,
+    const newProcessInstanceId: string = uuidv4();
+    this.processInstance = await this.processInstanceRepositoryService.create({
+      id: newProcessInstanceId,
       number: request.number,
-      processVersionId: process_version_id,
+      processVersionId: processVersionId,
       start: new Date(),
       end: null,
       status: Status.Pending,
@@ -96,73 +93,70 @@ export class EngineManagerService implements IEngineManagerService {
     });
     await this.executionQueueRepositoryService.create({
       id: uuidv4(),
-      nodeId: this.process_version.startNode,
-      processInstance: this.process_instance,
+      nodeId: this.processVersion.startNode,
+      processInstance: this.processInstance,
     });
-    return await this.run_engine();
+    return await this.runEngine();
   }
 
   async onEvent(request: EngineEventRequestDto): Promise<EngineResponseDto> {
-    this.process_instance_activities = [];
-    this.process_instance = await this.processInstanceRepositoryService.find(
+    this.processInstanceActivities = [];
+    this.processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    if (this.process_instance.status !== Status.Pending) {
+    if (this.processInstance.status !== Status.Pending) {
       throw new BadRequestException(
-        `Can not run engine, process_instance is in status: ${this.process_instance.status}`,
+        `Can not run engine, processInstance is in status: ${this.processInstance.status}`,
       );
     }
-    const process_version_id = this.process_instance.processVersionId;
-    this.process_version = await this.apiService.get(
-      `${this.designerBaseUrl}processes_version/${process_version_id}`,
+    const processVersionId = this.processInstance.processVersionId;
+    this.processVersion = await this.apiService.get(
+      `${this.designerBaseUrl}processes_version/${processVersionId}`,
     );
-    const process_instance_activities =
+    const processInstanceActivities =
       await this.processInstanceActivityRepositoryService.findByFilter({
         processInstance: { id: request.processInstanceId },
         nodeId: request.nodeId,
         status: Status.Pending,
       });
-    if (
-      !process_instance_activities ||
-      process_instance_activities.length === 0
-    ) {
+    if (!processInstanceActivities || processInstanceActivities.length === 0) {
       throw new BadRequestException(
         `There is no pending activity with the given parameters`,
       );
     }
-    const process_instance_activity = process_instance_activities[0];
-    process_instance_activity.end = new Date();
-    process_instance_activity.status = Status.Completed;
+    const processInstanceActivity = processInstanceActivities[0];
+    processInstanceActivity.end = new Date();
+    processInstanceActivity.status = Status.Completed;
     this.processInstanceActivityRepositoryService.update(
-      process_instance_activity,
+      processInstanceActivity,
     );
-    this.process_instance_activities.push(process_instance_activity);
+    this.processInstanceActivities.push(processInstanceActivity);
 
     const nextNodes: ProcessVersionNode[] = this.getNextNodes(
       request.nodeId,
-      this.process_version,
+      this.processVersion,
     );
     for (let i = 0; i < nextNodes.length; i++) {
       const newNodeToExecute: ExecutionQueueEntity = {
         id: uuidv4(),
         nodeId: nextNodes[i].id,
-        processInstance: this.process_instance,
+        processInstance: this.processInstance,
       };
       await this.executionQueueRepositoryService.create(newNodeToExecute);
     }
-    return await this.run_engine();
+    return await this.runEngine();
   }
 
   async pause(request: EnginePauseRequestDto): Promise<EngineResponseDto> {
-    this.process_instance = await this.processInstanceRepositoryService.find(
+    this.processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.process_instance.status = Status.Paused;
-    await this.processInstanceRepositoryService.update(this.process_instance);
+    this.processInstance.status = Status.Paused;
+    await this.processInstanceRepositoryService.update(this.processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.process_instance,
+        this.processInstance,
       ),
     };
   }
@@ -170,41 +164,41 @@ export class EngineManagerService implements IEngineManagerService {
   async continue(
     request: EngineContinueRequestDto,
   ): Promise<EngineResponseDto> {
-    this.process_instance = await this.processInstanceRepositoryService.find(
+    this.processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.process_instance.status = Status.Pending;
-    await this.processInstanceRepositoryService.update(this.process_instance);
+    this.processInstance.status = Status.Pending;
+    await this.processInstanceRepositoryService.update(this.processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.process_instance,
+        this.processInstance,
       ),
     };
   }
 
   async abort(request: EnginePauseRequestDto): Promise<EngineResponseDto> {
-    this.process_instance = await this.processInstanceRepositoryService.find(
+    this.processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.process_instance.status = Status.Aborted;
-    await this.processInstanceRepositoryService.update(this.process_instance);
+    this.processInstance.status = Status.Aborted;
+    await this.processInstanceRepositoryService.update(this.processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.process_instance,
+        this.processInstance,
       ),
     };
   }
 
-  private async run_engine(): Promise<EngineResponseDto> {
+  private async runEngine(): Promise<EngineResponseDto> {
     const nodesToExecute =
       await this.executionQueueRepositoryService.findByFilter({
         processInstance: {
-          id: this.process_instance.id,
+          id: this.processInstance.id,
         },
       });
-    let process_instance_status = Status.Completed;
+    let processInstanceStatus = Status.Completed;
     while (nodesToExecute.length > 0) {
       const processInstanceActivity: ProcessInstanceActivityEntity =
         await this.processInstanceActivityRepositoryService.create({
@@ -212,12 +206,12 @@ export class EngineManagerService implements IEngineManagerService {
           nodeId: nodesToExecute[0].nodeId,
           start: new Date(),
           status: Status.Pending,
-          processInstance: this.process_instance,
+          processInstance: this.processInstance,
           pendingData: null,
         });
       const node: ProcessVersionNode = this.getNode(
         nodesToExecute[0].nodeId,
-        this.process_version,
+        this.processVersion,
       );
       let executed = false;
       for (let i = 0; i < this.nodesExecutors.length; i++) {
@@ -237,13 +231,13 @@ export class EngineManagerService implements IEngineManagerService {
           if (executionInfo.result === NodeExecutionResult.Finished) {
             const nextNodes: ProcessVersionNode[] = this.getNextNodes(
               node.id,
-              this.process_version,
+              this.processVersion,
             );
             for (let i = 0; i < nextNodes.length; i++) {
               const newNodeToExecute: ExecutionQueueEntity = {
                 id: uuidv4(),
                 nodeId: nextNodes[i].id,
-                processInstance: this.process_instance,
+                processInstance: this.processInstance,
               };
               const nodeCreated =
                 await this.executionQueueRepositoryService.create(
@@ -254,12 +248,12 @@ export class EngineManagerService implements IEngineManagerService {
             processInstanceActivity.end = new Date();
             processInstanceActivity.status = Status.Completed;
           } else if (executionInfo.result === NodeExecutionResult.Idle) {
-            process_instance_status = Status.Pending;
+            processInstanceStatus = Status.Pending;
           }
           this.processInstanceActivityRepositoryService.update(
             processInstanceActivity,
           );
-          this.process_instance_activities.push(processInstanceActivity);
+          this.processInstanceActivities.push(processInstanceActivity);
           executed = true;
         }
       }
@@ -269,21 +263,21 @@ export class EngineManagerService implements IEngineManagerService {
         );
       }
     }
-    if (process_instance_status === Status.Completed) {
-      this.process_instance.end = new Date();
-      this.process_instance.status = Status.Completed;
-      this.processInstanceRepositoryService.update(this.process_instance);
+    if (processInstanceStatus === Status.Completed) {
+      this.processInstance.end = new Date();
+      this.processInstance.status = Status.Completed;
+      this.processInstanceRepositoryService.update(this.processInstance);
     }
     const engineResponseParser = new EngineResponseParser();
     const result: EngineResponseDto = {
       processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.process_instance,
+        this.processInstance,
       ),
     };
-    for (let i = 0; i < this.process_instance_activities.length; i++) {
+    for (let i = 0; i < this.processInstanceActivities.length; i++) {
       result.processInstance.processInstanceActivities.push(
         engineResponseParser.ParseToEngineInstanceActivityResponseDto(
-          this.process_instance_activities[i],
+          this.processInstanceActivities[i],
         ),
       );
     }

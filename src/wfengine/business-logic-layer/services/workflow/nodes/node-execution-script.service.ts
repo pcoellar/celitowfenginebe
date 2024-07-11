@@ -14,16 +14,16 @@ export class NodeExecutionScript implements INodeExecution {
     return false;
   }
 
-  execute(node_data: any, process_data: any): NodeExecutionOutInfo {
+  execute(nodeData: any, processData: any): NodeExecutionOutInfo {
     const outInfo = new NodeExecutionOutInfo();
     console.log(
-      'Node execution script. node_data: ' +
-        JSON.stringify(node_data) +
-        ' process_data: ' +
-        JSON.stringify(process_data),
+      'Node execution script. nodeData: ' +
+        JSON.stringify(nodeData) +
+        ' processData: ' +
+        JSON.stringify(processData),
     );
     outInfo.result = NodeExecutionResult.Finished;
-    outInfo.process_data = process_data;
+    outInfo.processData = processData;
     return outInfo;
   }
 }
