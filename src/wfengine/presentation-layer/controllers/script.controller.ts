@@ -28,7 +28,7 @@ export class ScriptController {
     return userCreated;
   }
 
-  @Delete()
+  @Delete(':id')
   async delete(@Param('id') id?: string) {
     await this.deleteScriptUseCase.execute(id);
   }

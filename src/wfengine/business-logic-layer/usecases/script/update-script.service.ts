@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { IScriptRepositoryService } from 'src/wfdefinition/data-acces-layer/repositories/interfaces/script-repository.interface';
-import { ScriptEntity } from 'src/wfdefinition/entities/data-entities/script.data.entity';
-import { ScriptRequestParser } from 'src/wfdefinition/entities/dto-entities/parsers/script-request.dto.parser';
-import { ScriptResponseParser } from 'src/wfdefinition/entities/dto-entities/parsers/script-response.dto.parse';
-import { ScriptResponseDto } from 'src/wfdefinition/entities/dto-entities/script-response.dto.entity';
-import { ScriptRequestDto } from 'src/wfdefinition/entities/dto-entities/script-request.dto.entity';
 import { IUpdateScriptService } from '../interfaces/script/update-script.interface';
+import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
+import { ScriptResponseDto } from 'src/wfengine/entities/dto-entities/script-response.dto.entity';
+import { ScriptRequestDto } from 'src/wfengine/entities/dto-entities/script-request.dto.entity';
+import { ScriptRequestParser } from 'src/wfengine/entities/dto-entities/parsers/script-request.dto.parser';
+import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.entity';
+import { ScriptResponseParser } from 'src/wfengine/entities/dto-entities/parsers/script-response.dto.parse';
 
 @Injectable()
 export class UpdateScriptService implements IUpdateScriptService {

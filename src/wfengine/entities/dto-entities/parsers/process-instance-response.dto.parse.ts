@@ -17,7 +17,8 @@ export class ProcessInstanceResponseParser {
       lastModified: processInstance.lastModified,
       processInstanceActivitiesResponse: [],
     };
-    const processInstanceActivityResponseParser = new ProcessInstanceActivityResponseParser();
+    const processInstanceActivityResponseParser =
+      new ProcessInstanceActivityResponseParser();
     for (let i = 0; i < processInstance.processInstanceActivities.length; i++) {
       const activity =
         processInstanceActivityResponseParser.ParseToProcessInstanceActivityResponseDto(

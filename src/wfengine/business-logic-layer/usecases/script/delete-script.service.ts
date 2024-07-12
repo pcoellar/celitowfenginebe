@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { IScriptRepositoryService } from 'src/wfdefinition/data-acces-layer/repositories/interfaces/script-repository.interface';
 import { IDeleteScriptService } from '../interfaces/script/delete-script.interface';
+import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
 
 @Injectable()
 export class DeleteScriptService implements IDeleteScriptService {
