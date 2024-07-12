@@ -7,13 +7,15 @@ import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/wor
 import { IProcessInstanceActivityRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/process-instance-activity-repository.interface';
 import { NodeDataSignal } from 'src/wfengine/entities/service-entities/workflow/node-data/node-data-signal.entity';
 import { Status } from 'src/wfengine/entities/enums/status.enum';
-import { IEngineManagerService } from '../interfaces/engine-manager.interface';
+import { IApiService } from 'src/common/business-logic-layer/services/api/interfaces/api.interface';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NodeExecutionSignalThrow implements INodeExecution {
   constructor(
     private readonly processInstanceActivityRepositoryService: IProcessInstanceActivityRepositoryService,
-    private readonly engineManagerService: IEngineManagerService,
+    private readonly apiService: IApiService,
+    private readonly configService: ConfigService,
   ) {}
 
   canExecute(type: NodeTypes, subtype: NodeSubTypes): boolean {
@@ -47,12 +49,14 @@ export class NodeExecutionSignalThrow implements INodeExecution {
           signal: signalData.signal,
         },
       });
+    const wfWebHookUrl: string = this.configService.get('WFWEBHOOK_URL');
     for (let i = 0; i < catchSignalActivities.length; i++) {
       try {
-        await this.engineManagerService.onEvent({
+        const body = {
           processInstanceId: catchSignalActivities[i].processInstance.id,
           nodeId: catchSignalActivities[i].nodeId,
-        });
+        };
+        await this.apiService.post(wfWebHookUrl, body);
       } catch {}
     }
     //end continue catch signal nodes
