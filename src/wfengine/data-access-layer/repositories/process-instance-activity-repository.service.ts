@@ -23,8 +23,9 @@ export class ProcessInstanceActivityRepositoryService
   async findByFilter(filter: any): Promise<ProcessInstanceActivityEntity[]> {
     try {
       return await this.entityRepository.find({ where: filter });
-    } catch {
-      throw new NotFoundException();
+    } catch (error) {
+      console.log('Error: ', error);
+      return [];
     }
   }
 

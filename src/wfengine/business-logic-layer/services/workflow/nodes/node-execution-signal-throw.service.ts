@@ -9,6 +9,7 @@ import { NodeDataSignal } from 'src/wfengine/entities/service-entities/workflow/
 import { Status } from 'src/wfengine/entities/enums/status.enum';
 import { IApiService } from 'src/common/business-logic-layer/services/api/interfaces/api.interface';
 import { ConfigService } from '@nestjs/config';
+import { JsonContains } from 'typeorm';
 
 @Injectable()
 export class NodeExecutionSignalThrow implements INodeExecution {
@@ -42,13 +43,15 @@ export class NodeExecutionSignalThrow implements INodeExecution {
 
     //being continue catch signal nodes
     const signalData: NodeDataSignal = nodeData as NodeDataSignal;
+    console.log("step1");
     const catchSignalActivities =
       await this.processInstanceActivityRepositoryService.findByFilter({
         status: Status.Pending,
-        nodeData: {
+        nodeData: JsonContains({
           signal: signalData.signal,
-        },
+        }),
       });
+    console.log("step2");
     const wfWebHookUrl: string = this.configService.get('WFWEBHOOK_URL');
     for (let i = 0; i < catchSignalActivities.length; i++) {
       try {

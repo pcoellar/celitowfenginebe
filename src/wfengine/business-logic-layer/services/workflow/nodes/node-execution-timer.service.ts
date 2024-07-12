@@ -41,7 +41,7 @@ export class NodeExecutionTimer implements INodeExecution {
     const timerData: NodeDataTimer = nodeData as NodeDataTimer;
     const targetDate = new Date();
     targetDate.setMinutes(targetDate.getMinutes() + timerData.minutes);
-    const formatedDate: string = targetDate.toISOString();
+    const formatedDate: string = targetDate.toISOString().split('.')[0];
     const schedulerInfo = {
       datetime: formatedDate,
       instance: instanceId,
@@ -50,7 +50,12 @@ export class NodeExecutionTimer implements INodeExecution {
     const wfWebHookSchedulerUrl: string = this.configService.get(
       'WFWEBHOOKSCHEDULER_URL',
     );
-    await this.apiService.post(wfWebHookSchedulerUrl, schedulerInfo);
+    console.log('Scheduler Info: ', schedulerInfo);
+    const response = await this.apiService.post(
+      wfWebHookSchedulerUrl,
+      schedulerInfo,
+    );
+    console.log('Response wfWebHookSchedulerUrl call: ', response);
     //end trigger timer scheduler
 
     outInfo.result = NodeExecutionResult.Idle;
