@@ -12,7 +12,9 @@ export class GetProcessInstanceService implements IGetProcessInstanceService {
   ) {}
   async execute(id: string): Promise<ProcessInstanceResponseDto> {
     const processInstance: ProcessInstanceEntity =
-      await this.processInstanceRepositoryService.find(id);
+      await this.processInstanceRepositoryService.find(id, [
+        'processInstanceActivities',
+      ]);
     const getProcessInstanceResponseParser =
       new ProcessInstanceResponseParser();
     const result: ProcessInstanceResponseDto =

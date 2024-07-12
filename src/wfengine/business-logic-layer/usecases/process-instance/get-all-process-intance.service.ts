@@ -14,7 +14,9 @@ export class GetAllProcessInstanceService
   ) {}
   async execute(): Promise<ProcessInstanceResponseDto[]> {
     const processInstanceEntities: ProcessInstanceEntity[] =
-      await this.processInstanceRepositoryService.findAll();
+      await this.processInstanceRepositoryService.findAll([
+        'processInstanceActivities',
+      ]);
     const result: ProcessInstanceResponseDto[] = [];
     for (let i = 0; i < processInstanceEntities.length; i++) {
       const getProcessResponseParser = new ProcessInstanceResponseParser();

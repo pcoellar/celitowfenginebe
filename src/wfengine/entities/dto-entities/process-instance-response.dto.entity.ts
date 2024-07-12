@@ -1,4 +1,5 @@
 import { Status } from '../enums/status.enum';
+import { ProcessInstanceActivityResponseDto } from './process-instance-activity-response.dto.entity';
 
 export class ProcessInstanceResponseDto {
   id: string;
@@ -9,4 +10,5 @@ export class ProcessInstanceResponseDto {
   status: Status;
   createdDate?: Date;
   lastModified?: Date;
+  processInstanceActivitiesResponse: ProcessInstanceActivityResponseDto[];
 }

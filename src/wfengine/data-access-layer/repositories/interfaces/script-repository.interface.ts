@@ -10,4 +10,7 @@ export abstract class IScriptRepositoryService
     filter: any,
     relations?: string[],
   ): Promise<ScriptEntity[]>;
+  abstract create(entity: ScriptEntity): Promise<ScriptEntity>;
+  abstract update(entity: Partial<ScriptEntity>): Promise<ScriptEntity>;
+  abstract delete(id: string);
 }

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IScriptRepositoryService } from './interfaces/script-repository.interface';
 import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.entity';
+import { AuditableFieldsManager } from 'src/common/business-logic-layer/services/audit/utils';
 
 @Injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService {
@@ -18,28 +19,51 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
     return entities;
   }
 
-  async findByFilter(
-    filter: any,
-    relations?: string[],
-  ): Promise<ScriptEntity[]> {
+  async findByFilter(filter: any): Promise<ScriptEntity[]> {
     try {
-      return await this.entityRepository.find({
-        where: filter,
-        relations: relations ?? [],
-      });
+      return await this.entityRepository.find({ where: filter });
     } catch {
       throw new NotFoundException();
     }
   }
 
-  async find(id: string, relations?: []): Promise<ScriptEntity> {
+  async find(id: string): Promise<ScriptEntity> {
     try {
-      return await this.entityRepository.findOne({
-        where: { id },
-        relations: relations ?? [],
-      });
+      return await this.entityRepository.findOne({ where: { id } });
     } catch {
       throw new NotFoundException();
     }
+  }
+
+  async create(entity: ScriptEntity): Promise<ScriptEntity> {
+    const auditableFieldsManager = new AuditableFieldsManager();
+    entity = auditableFieldsManager.IncludeAuditableFieldsOnCreate(entity);
+    const data = this.entityRepository.create(entity);
+    const result = await this.entityRepository.save(data);
+    return result;
+  }
+
+  async update(entity: Partial<ScriptEntity>): Promise<ScriptEntity> {
+    const auditableFieldsManager = new AuditableFieldsManager();
+    entity = auditableFieldsManager.IncludeAuditableFieldsOnUpdate(entity);
+    let entityToModify: ScriptEntity = await this.find(entity.id);
+    if (!entityToModify) {
+      throw new NotFoundException();
+    }
+    entityToModify = {
+      ...entityToModify,
+      ...entity,
+    };
+    const result: ScriptEntity =
+      await this.entityRepository.save(entityToModify);
+    return result;
+  }
+
+  async delete(id: string) {
+    const entityToDelete: ScriptEntity = await this.find(id);
+    if (!entityToDelete) {
+      throw new NotFoundException();
+    }
+    await this.entityRepository.delete(id);
   }
 }

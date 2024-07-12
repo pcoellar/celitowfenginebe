@@ -11,6 +11,7 @@ export class ProcessInstanceActivityResponseParser {
       start: processInstanceActivity.start,
       end: processInstanceActivity.end,
       status: processInstanceActivity.status,
+      nodeData: processInstanceActivity.nodeData,
       createdDate: processInstanceActivity.createdDate,
       lastModified: processInstanceActivity.lastModified,
     };

@@ -6,6 +6,7 @@ export class ProcessInstanceActivityResponseDto {
   start: Date;
   end: Date;
   status: Status;
+  nodeData?: any;
   createdDate?: Date;
   lastModified?: Date;
 }
