@@ -25,6 +25,7 @@ import { EngineResponseParser } from 'src/wfengine/entities/dto-entities/parsers
 import { EnginePauseRequestDto } from 'src/wfengine/entities/dto-entities/engine-pause-request.dto.entity';
 import { EngineContinueRequestDto } from 'src/wfengine/entities/dto-entities/engine-continue-request.dto.entity';
 import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
+import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
 
 @Injectable()
 export class EngineManagerService implements IEngineManagerService {
@@ -36,11 +37,9 @@ export class EngineManagerService implements IEngineManagerService {
     private readonly processInstanceActivityRepositoryService: IProcessInstanceActivityRepositoryService,
     private readonly apiService: IApiService,
     private readonly configService: ConfigService,
+    private readonly loggerService: ILoggerService,
   ) {}
 
-  private processInstance: ProcessInstanceEntity;
-  private processInstanceActivities: ProcessInstanceActivityEntity[];
-  private processVersion: ProcessVersion;
   private designerBaseUrl: string = this.configService.get(
     'WFDESIGNER_BASE_URL',
   );
@@ -72,16 +71,20 @@ export class EngineManagerService implements IEngineManagerService {
   }
 
   async start(request: EngineStartRequestDto): Promise<EngineResponseDto> {
-    this.processInstanceActivities = [];
+    this.loggerService.log(
+      'WF Engine Execution',
+      'Workflow started. Request: ' + JSON.stringify(request),
+    );
+    const processInstanceActivities = [];
     const process: Process = await this.apiService.get(
       `${this.designerBaseUrl}processes/${request.processId}`,
     );
     const processVersionId: string = process.currentVersion;
-    this.processVersion = await this.apiService.get(
+    const processVersion = await this.apiService.get(
       `${this.designerBaseUrl}processes_version/${processVersionId}`,
     );
     const newProcessInstanceId: string = uuidv4();
-    this.processInstance = await this.processInstanceRepositoryService.create({
+    const processInstance = await this.processInstanceRepositoryService.create({
       id: newProcessInstanceId,
       number: request.number,
       processVersionId: processVersionId,
@@ -91,118 +94,168 @@ export class EngineManagerService implements IEngineManagerService {
       processInstanceActivities: null,
       processInstanceExecutionQueue: null,
     });
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Instance created. Process instance: ' + JSON.stringify(processInstance),
+    );
     await this.executionQueueRepositoryService.create({
       id: uuidv4(),
-      nodeId: this.processVersion.startNode,
-      processInstance: this.processInstance,
+      nodeId: processVersion.startNode,
+      processInstance: processInstance,
     });
-    return await this.runEngine();
+    return await this.runEngine(
+      processInstance,
+      processInstanceActivities,
+      processVersion,
+    );
   }
 
   async onEvent(request: EngineEventRequestDto): Promise<EngineResponseDto> {
-    this.processInstanceActivities = [];
-    this.processInstance = await this.processInstanceRepositoryService.find(
+    this.loggerService.log(
+      'WF Engine Execution',
+      'WebHook called. Request: ' + JSON.stringify(request),
+    );
+    const processInstanceActivities = [];
+    const processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    if (this.processInstance.status !== Status.Pending) {
-      throw new BadRequestException(
-        `Can not run engine, processInstance is in status: ${this.processInstance.status}`,
+    if (processInstance.status !== Status.Pending) {
+      const errorMsg = `Can not run engine, processInstance is in status: ${processInstance.status}`;
+      this.loggerService.log(
+        'WF Engine Execution - ' + processInstance.id,
+        errorMsg,
       );
+      throw new BadRequestException(errorMsg);
     }
-    const processVersionId = this.processInstance.processVersionId;
-    this.processVersion = await this.apiService.get(
+    const processVersionId = processInstance.processVersionId;
+    const processVersion = await this.apiService.get(
       `${this.designerBaseUrl}processes_version/${processVersionId}`,
     );
-    const processInstanceActivities =
+    const processInstanceActivitiesFound =
       await this.processInstanceActivityRepositoryService.findByFilter({
         processInstance: { id: request.processInstanceId },
         nodeId: request.nodeId,
         status: Status.Pending,
       });
-    if (!processInstanceActivities || processInstanceActivities.length === 0) {
-      throw new BadRequestException(
-        `There is no pending activity with the given parameters`,
+    if (
+      !processInstanceActivitiesFound ||
+      processInstanceActivitiesFound.length === 0
+    ) {
+      const errorMsg = `There is no pending activity with the given parameters`;
+      this.loggerService.log(
+        'WF Engine Execution - ' + processInstance.id,
+        errorMsg,
       );
+      throw new BadRequestException(errorMsg);
     }
-    const processInstanceActivity = processInstanceActivities[0];
+    const processInstanceActivity = processInstanceActivitiesFound[0];
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Continuing activity: ' + JSON.stringify(processInstanceActivity),
+    );
     processInstanceActivity.end = new Date();
     processInstanceActivity.status = Status.Completed;
     this.processInstanceActivityRepositoryService.update(
       processInstanceActivity,
     );
-    this.processInstanceActivities.push(processInstanceActivity);
+    processInstanceActivities.push(processInstanceActivity);
 
     const nextNodes: ProcessVersionNode[] = this.getNextNodes(
       request.nodeId,
-      this.processVersion,
+      processVersion,
     );
     for (let i = 0; i < nextNodes.length; i++) {
       const newNodeToExecute: ExecutionQueueEntity = {
         id: uuidv4(),
         nodeId: nextNodes[i].id,
-        processInstance: this.processInstance,
+        processInstance: processInstance,
       };
       await this.executionQueueRepositoryService.create(newNodeToExecute);
     }
-    return await this.runEngine();
+    return await this.runEngine(
+      processInstance,
+      processInstanceActivities,
+      processVersion,
+    );
   }
 
   async pause(request: EnginePauseRequestDto): Promise<EngineResponseDto> {
-    this.processInstance = await this.processInstanceRepositoryService.find(
+    const processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.processInstance.status = Status.Paused;
-    await this.processInstanceRepositoryService.update(this.processInstance);
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Workflow pause. Request: ' + JSON.stringify(request),
+    );
+    processInstance.status = Status.Paused;
+    await this.processInstanceRepositoryService.update(processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
-      processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.processInstance,
-      ),
+      processInstance:
+        engineResponseParser.ParseToEngineInstanceResponseDto(processInstance),
     };
   }
 
   async continue(
     request: EngineContinueRequestDto,
   ): Promise<EngineResponseDto> {
-    this.processInstance = await this.processInstanceRepositoryService.find(
+    const processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.processInstance.status = Status.Pending;
-    await this.processInstanceRepositoryService.update(this.processInstance);
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Workflow continue. Request: ' + JSON.stringify(request),
+    );
+    processInstance.status = Status.Pending;
+    await this.processInstanceRepositoryService.update(processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
-      processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.processInstance,
-      ),
+      processInstance:
+        engineResponseParser.ParseToEngineInstanceResponseDto(processInstance),
     };
   }
 
   async abort(request: EnginePauseRequestDto): Promise<EngineResponseDto> {
-    this.processInstance = await this.processInstanceRepositoryService.find(
+    const processInstance = await this.processInstanceRepositoryService.find(
       request.processInstanceId,
     );
-    this.processInstance.status = Status.Aborted;
-    await this.processInstanceRepositoryService.update(this.processInstance);
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Workflow abort. Request: ' + JSON.stringify(request),
+    );
+    processInstance.status = Status.Aborted;
+    await this.processInstanceRepositoryService.update(processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
-      processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.processInstance,
-      ),
+      processInstance:
+        engineResponseParser.ParseToEngineInstanceResponseDto(processInstance),
     };
   }
 
-  private async runEngine(): Promise<EngineResponseDto> {
+  private async runEngine(
+    processInstance: ProcessInstanceEntity,
+    processInstanceActivities: ProcessInstanceActivityEntity[],
+    processVersion: ProcessVersion,
+  ): Promise<EngineResponseDto> {
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Workflow engine running.',
+    );
     const nodesToExecute =
       await this.executionQueueRepositoryService.findByFilter({
         processInstance: {
-          id: this.processInstance.id,
+          id: processInstance.id,
         },
       });
     let processInstanceStatus = Status.Completed;
     while (nodesToExecute.length > 0) {
       const node: ProcessVersionNode = this.getNode(
         nodesToExecute[0].nodeId,
-        this.processVersion,
+        processVersion,
+      );
+      this.loggerService.log(
+        'WF Engine Execution - ' + processInstance.id,
+        'Executing node: ' + JSON.stringify(node),
       );
       const processInstanceActivity: ProcessInstanceActivityEntity =
         await this.processInstanceActivityRepositoryService.create({
@@ -210,7 +263,7 @@ export class EngineManagerService implements IEngineManagerService {
           nodeId: nodesToExecute[0].nodeId,
           start: new Date(),
           status: Status.Pending,
-          processInstance: this.processInstance,
+          processInstance: processInstance,
           nodeData: node.data,
         });
       let executed = false;
@@ -218,26 +271,34 @@ export class EngineManagerService implements IEngineManagerService {
         if (this.nodesExecutors[i].canExecute(node.type, node.subtype)) {
           const executionInfo: NodeExecutionOutInfo = await this.nodesExecutors[
             i
-          ].execute(node.data, {}, this.processInstance.id, node.id);
+          ].execute(node.data, {}, processInstance.id, node.id);
           if (executionInfo.result === NodeExecutionResult.Error) {
-            throw new Error(
-              `Error while runnint node: ${node.id} of type:${node.type} and subtype:${node.subtype}`,
+            const errorMsg = `Error while runnint node: ${node.id} of type:${node.type} and subtype:${node.subtype}`;
+            this.loggerService.log(
+              'WF Engine Execution  - ' + processInstance.id,
+              errorMsg,
             );
+
+            throw new Error(errorMsg);
           }
           await this.executionQueueRepositoryService.delete(
             nodesToExecute[0].id,
+          );
+          this.loggerService.log(
+            'WF Engine Execution - ' + processInstance.id,
+            'Node executed successfully and deleted from queue',
           );
           nodesToExecute.splice(0, 1);
           if (executionInfo.result === NodeExecutionResult.Finished) {
             const nextNodes: ProcessVersionNode[] = this.getNextNodes(
               node.id,
-              this.processVersion,
+              processVersion,
             );
             for (let i = 0; i < nextNodes.length; i++) {
               const newNodeToExecute: ExecutionQueueEntity = {
                 id: uuidv4(),
                 nodeId: nextNodes[i].id,
-                processInstance: this.processInstance,
+                processInstance: processInstance,
               };
               const nodeCreated =
                 await this.executionQueueRepositoryService.create(
@@ -247,40 +308,63 @@ export class EngineManagerService implements IEngineManagerService {
             }
             processInstanceActivity.end = new Date();
             processInstanceActivity.status = Status.Completed;
+            this.loggerService.log(
+              'WF Engine Execution - ' + processInstance.id,
+              'Node execution completed',
+            );
           } else if (executionInfo.result === NodeExecutionResult.Idle) {
             processInstanceStatus = Status.Pending;
+            this.loggerService.log(
+              'WF Engine Execution - ' + processInstance.id,
+              'Node execution idle. Waiting for webhook trigger to continue',
+            );
           }
           this.processInstanceActivityRepositoryService.update(
             processInstanceActivity,
           );
-          this.processInstanceActivities.push(processInstanceActivity);
+          processInstanceActivities.push(processInstanceActivity);
           executed = true;
         }
       }
       if (!executed) {
-        throw new Error(
-          `Can not run node of type:${node.type} and subtype:${node.subtype}`,
+        const errorMsg = `Can not run node of type:${node.type} and subtype:${node.subtype}`;
+        this.loggerService.log(
+          'WF Engine Execution - ' + processInstance.id,
+          errorMsg,
         );
+        throw new Error(errorMsg);
       }
     }
     if (processInstanceStatus === Status.Completed) {
-      this.processInstance.end = new Date();
-      this.processInstance.status = Status.Completed;
-      this.processInstanceRepositoryService.update(this.processInstance);
+      processInstance.end = new Date();
+      processInstance.status = Status.Completed;
+      this.processInstanceRepositoryService.update(processInstance);
+      this.loggerService.log(
+        'WF Engine Execution - ' + processInstance.id,
+        'Process instance completed, reached end of process',
+      );
+    } else {
+      this.loggerService.log(
+        'WF Engine Execution - ' + processInstance.id,
+        'Process instance idle',
+      );
     }
     const engineResponseParser = new EngineResponseParser();
     const result: EngineResponseDto = {
-      processInstance: engineResponseParser.ParseToEngineInstanceResponseDto(
-        this.processInstance,
-      ),
+      processInstance:
+        engineResponseParser.ParseToEngineInstanceResponseDto(processInstance),
     };
-    for (let i = 0; i < this.processInstanceActivities.length; i++) {
+    for (let i = 0; i < processInstanceActivities.length; i++) {
       result.processInstance.processInstanceActivities.push(
         engineResponseParser.ParseToEngineInstanceActivityResponseDto(
-          this.processInstanceActivities[i],
+          processInstanceActivities[i],
         ),
       );
     }
+    this.loggerService.log(
+      'WF Engine Execution - ' + processInstance.id,
+      'Workflow engine execution result: ' + JSON.stringify(result),
+    );
     return result;
   }
 }

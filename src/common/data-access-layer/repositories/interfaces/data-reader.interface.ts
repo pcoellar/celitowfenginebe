@@ -1,5 +1,5 @@
 export interface IDataReaderService<T> {
-  findAll(): Promise<T[]>;
-  findByFilter(filter: any): Promise<T[]>;
-  find(id: string): Promise<T>;
+  findAll(relations?: string[]): Promise<T[]>;
+  findByFilter(filter: any, relations?: string[]): Promise<T[]>;
+  find(id: string, relations?: string[]): Promise<T>;
 }

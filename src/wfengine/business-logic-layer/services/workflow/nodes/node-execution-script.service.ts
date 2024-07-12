@@ -7,11 +7,13 @@ import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/wor
 import { NodeDataScript } from 'src/wfengine/entities/service-entities/workflow/node-data/node-data-script.entity';
 import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.entity';
 import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
+import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
 
 @Injectable()
 export class NodeExecutionScript implements INodeExecution {
   constructor(
     private readonly scriptRepositoryService: IScriptRepositoryService,
+    private readonly loggerService: ILoggerService,
   ) {}
 
   canExecute(type: NodeTypes, subtype: NodeSubTypes): boolean {
@@ -27,13 +29,16 @@ export class NodeExecutionScript implements INodeExecution {
     instanceId: string,
     nodeId: string,
   ): Promise<NodeExecutionOutInfo> {
-    const outInfo = new NodeExecutionOutInfo();
-    console.log(
-      'Node execution script. nodeData: ' +
+    this.loggerService.log(
+      'WF Engine Execution - ' + instanceId,
+      'Node execution execution script. nodeData: ' +
         JSON.stringify(nodeData) +
         ' processData: ' +
-        JSON.stringify(processData),
-      ' instanceId: ' + instanceId + ' nodeID: ' + nodeId,
+        JSON.stringify(processData) +
+        ' instanceId: ' +
+        instanceId +
+        ' nodeID: ' +
+        nodeId,
     );
 
     //begin dynamic code execution
@@ -43,11 +48,22 @@ export class NodeExecutionScript implements INodeExecution {
     );
     const executeCode = new Function(scriptEntity.code);
     executeCode();
+    this.loggerService.log(
+      'WF Engine Execution - ' + instanceId,
+      'Script executed successfully',
+    );
     //end dynamic code execution
 
+    const outInfo = new NodeExecutionOutInfo();
     outInfo.result = NodeExecutionResult.Finished;
     outInfo.processData = processData;
     outInfo.nodeData = nodeData;
+
+    this.loggerService.log(
+      'WF Engine Execution - ' + instanceId,
+      'Node execution result: ' + JSON.stringify(outInfo),
+    );
+
     return outInfo;
   }
 }

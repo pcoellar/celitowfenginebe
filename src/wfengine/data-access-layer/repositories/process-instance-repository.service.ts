@@ -14,23 +14,33 @@ export class ProcessInstanceRepositoryService
     private readonly entityRepository: Repository<ProcessInstanceEntity>,
   ) {}
 
-  async findAll(): Promise<ProcessInstanceEntity[]> {
-    const entities: ProcessInstanceEntity[] =
-      await this.entityRepository.find();
+  async findAll(relations?: string[]): Promise<ProcessInstanceEntity[]> {
+    const entities: ProcessInstanceEntity[] = await this.entityRepository.find({
+      relations: relations ?? [],
+    });
     return entities;
   }
 
-  async findByFilter(filter: any): Promise<ProcessInstanceEntity[]> {
+  async findByFilter(
+    filter: any,
+    relations?: string[],
+  ): Promise<ProcessInstanceEntity[]> {
     try {
-      return await this.entityRepository.find({ where: filter });
+      return await this.entityRepository.find({
+        where: filter,
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }
   }
 
-  async find(id: string): Promise<ProcessInstanceEntity> {
+  async find(id: string, relations?: string[]): Promise<ProcessInstanceEntity> {
     try {
-      return await this.entityRepository.findOne({ where: { id } });
+      return await this.entityRepository.findOne({
+        where: { id },
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }

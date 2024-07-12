@@ -14,22 +14,33 @@ export class ExecutionQueueRepositoryService
     private readonly entityRepository: Repository<ExecutionQueueEntity>,
   ) {}
 
-  async findAll(): Promise<ExecutionQueueEntity[]> {
-    const entities: ExecutionQueueEntity[] = await this.entityRepository.find();
+  async findAll(relations?: string[]): Promise<ExecutionQueueEntity[]> {
+    const entities: ExecutionQueueEntity[] = await this.entityRepository.find({
+      relations: relations ?? [],
+    });
     return entities;
   }
 
-  async findByFilter(filter: any): Promise<ExecutionQueueEntity[]> {
+  async findByFilter(
+    filter: any,
+    relations?: string[],
+  ): Promise<ExecutionQueueEntity[]> {
     try {
-      return await this.entityRepository.find({ where: filter });
+      return await this.entityRepository.find({
+        where: filter,
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }
   }
 
-  async find(id: string): Promise<ExecutionQueueEntity> {
+  async find(id: string, relations?: string[]): Promise<ExecutionQueueEntity> {
     try {
-      return await this.entityRepository.findOne({ where: { id } });
+      return await this.entityRepository.findOne({
+        where: { id },
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }

@@ -4,7 +4,10 @@ import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.en
 export abstract class IScriptRepositoryService
   implements IDataReaderService<ScriptEntity>
 {
-  abstract findAll(): Promise<ScriptEntity[]>;
-  abstract find(id: string): Promise<ScriptEntity>;
-  abstract findByFilter(filter: any): Promise<ScriptEntity[]>;
+  abstract findAll(relations?: string[]): Promise<ScriptEntity[]>;
+  abstract find(id: string, relations?: string[]): Promise<ScriptEntity>;
+  abstract findByFilter(
+    filter: any,
+    relations?: string[],
+  ): Promise<ScriptEntity[]>;
 }

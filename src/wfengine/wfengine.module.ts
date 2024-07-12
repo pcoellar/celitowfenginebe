@@ -48,6 +48,8 @@ import { ExecutionQueueRepositoryService } from './data-access-layer/repositorie
 import { IScriptRepositoryService } from './data-access-layer/repositories/interfaces/script-repository.interface';
 import { ScriptRepositoryService } from './data-access-layer/repositories/script-repository.service';
 import { ScriptEntity } from './entities/data-entities/script.data.entity';
+import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
+import { LoggerService } from 'src/common/business-logic-layer/services/logger/logger.service';
 
 @Module({
   imports: [
@@ -99,6 +101,10 @@ import { ScriptEntity } from './entities/data-entities/script.data.entity';
     {
       provide: IApiService,
       useClass: ApiService,
+    },
+    {
+      provide: ILoggerService,
+      useClass: LoggerService,
     },
     {
       provide: IEngineManagerService,

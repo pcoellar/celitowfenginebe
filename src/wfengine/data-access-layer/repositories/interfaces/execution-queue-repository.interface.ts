@@ -9,9 +9,15 @@ export abstract class IExecutionQueueRepositoryService
     IDataWriterService<ExecutionQueueEntity>,
     IDataRemoverService
 {
-  abstract findAll(): Promise<ExecutionQueueEntity[]>;
-  abstract find(id: string): Promise<ExecutionQueueEntity>;
-  abstract findByFilter(filter: any): Promise<ExecutionQueueEntity[]>;
+  abstract findAll(relations?: string[]): Promise<ExecutionQueueEntity[]>;
+  abstract find(
+    id: string,
+    relations?: string[],
+  ): Promise<ExecutionQueueEntity>;
+  abstract findByFilter(
+    filter: any,
+    relations?: string[],
+  ): Promise<ExecutionQueueEntity[]>;
   abstract create(entity: ExecutionQueueEntity): Promise<ExecutionQueueEntity>;
   abstract update(
     entity: Partial<ExecutionQueueEntity>,

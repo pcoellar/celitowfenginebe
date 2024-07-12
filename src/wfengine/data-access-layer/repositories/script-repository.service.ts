@@ -11,22 +11,33 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
     private readonly entityRepository: Repository<ScriptEntity>,
   ) {}
 
-  async findAll(): Promise<ScriptEntity[]> {
-    const entities: ScriptEntity[] = await this.entityRepository.find();
+  async findAll(relations?: string[]): Promise<ScriptEntity[]> {
+    const entities: ScriptEntity[] = await this.entityRepository.find({
+      relations: relations ?? [],
+    });
     return entities;
   }
 
-  async findByFilter(filter: any): Promise<ScriptEntity[]> {
+  async findByFilter(
+    filter: any,
+    relations?: string[],
+  ): Promise<ScriptEntity[]> {
     try {
-      return await this.entityRepository.find({ where: filter });
+      return await this.entityRepository.find({
+        where: filter,
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }
   }
 
-  async find(id: string): Promise<ScriptEntity> {
+  async find(id: string, relations?: []): Promise<ScriptEntity> {
     try {
-      return await this.entityRepository.findOne({ where: { id } });
+      return await this.entityRepository.findOne({
+        where: { id },
+        relations: relations ?? [],
+      });
     } catch {
       throw new NotFoundException();
     }
