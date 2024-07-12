@@ -33,7 +33,7 @@ export class NodeExecutionSignalThrow implements INodeExecution {
   ): Promise<NodeExecutionOutInfo> {
     const outInfo = new NodeExecutionOutInfo();
     console.log(
-      'Node execution task user. nodeData: ' +
+      'Node execution signal throw. nodeData: ' +
         JSON.stringify(nodeData) +
         ' processData: ' +
         JSON.stringify(processData),

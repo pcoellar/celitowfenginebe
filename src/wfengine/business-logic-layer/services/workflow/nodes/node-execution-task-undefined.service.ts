@@ -22,7 +22,7 @@ export class NodeExecutionTaskUndefined implements INodeExecution {
   ): Promise<NodeExecutionOutInfo> {
     const outInfo = new NodeExecutionOutInfo();
     console.log(
-      'Node execution task user. nodeData: ' +
+      'Node execution task undefined. nodeData: ' +
         JSON.stringify(nodeData) +
         ' processData: ' +
         JSON.stringify(processData),
