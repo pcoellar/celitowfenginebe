@@ -6,6 +6,7 @@ import { ProcessInstanceEntity } from './wfengine/entities/data-entities/process
 import { ProcessInstanceActivityEntity } from './wfengine/entities/data-entities/process-instance-activity.data.entity';
 import { ExecutionQueueEntity } from './wfengine/entities/data-entities/execution-queue.data.entity';
 import { CommonModule } from './common/common.module';
+import { ScriptEntity } from './wfengine/entities/data-entities/script.data.entity';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CommonModule } from './common/common.module';
           ProcessInstanceEntity,
           ProcessInstanceActivityEntity,
           ExecutionQueueEntity,
+          ScriptEntity,
         ],
         synchronize: true,
       }),

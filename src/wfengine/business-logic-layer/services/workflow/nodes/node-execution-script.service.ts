@@ -5,8 +5,8 @@ import { NodeSubTypes } from 'src/wfengine/entities/enums/node-subtypes.enum';
 import { NodeTypes } from 'src/wfengine/entities/enums/node-types.enum';
 import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
 import { NodeDataScript } from 'src/wfengine/entities/service-entities/workflow/node-data/node-data-script.entity';
-import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
 import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.entity';
+import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
 
 @Injectable()
 export class NodeExecutionScript implements INodeExecution {

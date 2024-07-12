@@ -42,9 +42,12 @@ import { IWfPauseService } from './business-logic-layer/usecases/interfaces/engi
 import { WfPauseService } from './business-logic-layer/usecases/engine/wf-pause.service';
 import { IWfContinueService } from './business-logic-layer/usecases/interfaces/engine/wf-continue.interface';
 import { WfContinueService } from './business-logic-layer/usecases/engine/wf-continue.service';
+import { WFEngineController } from './presentation-layer/controllers/wfengine.controller';
 import { IExecutionQueueRepositoryService } from './data-access-layer/repositories/interfaces/execution-queue-repository.interface';
 import { ExecutionQueueRepositoryService } from './data-access-layer/repositories/execution-queue-repository.service';
-import { WFEngineController } from './presentation-layer/controllers/wfengine.controller';
+import { IScriptRepositoryService } from './data-access-layer/repositories/interfaces/script-repository.interface';
+import { ScriptRepositoryService } from './data-access-layer/repositories/script-repository.service';
+import { ScriptEntity } from './entities/data-entities/script.data.entity';
 
 @Module({
   imports: [
@@ -52,6 +55,7 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
       ProcessInstanceEntity,
       ProcessInstanceActivityEntity,
       ExecutionQueueEntity,
+      ScriptEntity,
     ]),
     CommonModule,
   ],
@@ -63,6 +67,10 @@ import { WFEngineController } from './presentation-layer/controllers/wfengine.co
     {
       provide: IProcessInstanceActivityRepositoryService,
       useClass: ProcessInstanceActivityRepositoryService,
+    },
+    {
+      provide: IScriptRepositoryService,
+      useClass: ScriptRepositoryService,
     },
     {
       provide: IGetProcessInstanceActivityService,
