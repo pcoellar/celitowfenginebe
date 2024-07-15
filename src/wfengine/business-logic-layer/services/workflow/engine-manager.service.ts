@@ -51,20 +51,46 @@ export class EngineManagerService implements IEngineManagerService {
     return nodes[0];
   }
 
-  getNextNodes(
+  async evaluateCondition(
+    condition: string,
+    processData: any,
+  ): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const vm = require('node:vm');
+
+    const context = {
+      processData,
+    };
+    vm.createContext(context);
+    const result = await vm.runInContext(condition, context);
+    return result;
+  }
+
+  async getNextNodes(
     nodeId: string,
     processVersion: ProcessVersion,
-  ): ProcessVersionNode[] {
+    processData: any,
+  ): Promise<ProcessVersionNode[]> {
     const nodes: ProcessVersionNode[] = [];
     const sequenceFlows: ProcessVersionSequenceFlow[] =
       processVersion.sequenceFlows.filter((x) => x.initNode === nodeId);
     if (sequenceFlows && sequenceFlows.length > 0) {
       for (let i = 0; i < sequenceFlows.length; i++) {
-        const node: ProcessVersionNode = this.getNode(
-          sequenceFlows[i].endNode,
-          processVersion,
-        );
-        nodes.push(node);
+        let conditionResult = true;
+        const condition = sequenceFlows[i].condition;
+        if (condition) {
+          conditionResult = await this.evaluateCondition(
+            condition,
+            processData,
+          );
+        }
+        if (conditionResult) {
+          const node: ProcessVersionNode = this.getNode(
+            sequenceFlows[i].endNode,
+            processVersion,
+          );
+          nodes.push(node);
+        }
       }
     }
     return nodes;
@@ -90,6 +116,7 @@ export class EngineManagerService implements IEngineManagerService {
       processVersionId: processVersionId,
       start: new Date(),
       end: null,
+      data: {},
       status: Status.Pending,
       processInstanceActivities: null,
       processInstanceExecutionQueue: null,
@@ -107,6 +134,7 @@ export class EngineManagerService implements IEngineManagerService {
       processInstance,
       processInstanceActivities,
       processVersion,
+      {},
     );
   }
 
@@ -160,9 +188,12 @@ export class EngineManagerService implements IEngineManagerService {
     );
     processInstanceActivities.push(processInstanceActivity);
 
-    const nextNodes: ProcessVersionNode[] = this.getNextNodes(
+    const processData = processInstance.data;
+
+    const nextNodes: ProcessVersionNode[] = await this.getNextNodes(
       request.nodeId,
       processVersion,
+      processData,
     );
     for (let i = 0; i < nextNodes.length; i++) {
       const newNodeToExecute: ExecutionQueueEntity = {
@@ -176,6 +207,7 @@ export class EngineManagerService implements IEngineManagerService {
       processInstance,
       processInstanceActivities,
       processVersion,
+      processData,
     );
   }
 
@@ -236,6 +268,7 @@ export class EngineManagerService implements IEngineManagerService {
     processInstance: ProcessInstanceEntity,
     processInstanceActivities: ProcessInstanceActivityEntity[],
     processVersion: ProcessVersion,
+    processData: any,
   ): Promise<EngineResponseDto> {
     this.loggerService.log(
       'WF Engine Execution - ' + processInstance.id,
@@ -271,7 +304,8 @@ export class EngineManagerService implements IEngineManagerService {
         if (this.nodesExecutors[i].canExecute(node.type, node.subtype)) {
           const executionInfo: NodeExecutionOutInfo = await this.nodesExecutors[
             i
-          ].execute(node.data, {}, processInstance.id, node.id);
+          ].execute(node.data, processData, processInstance.id, node.id);
+          processData = executionInfo.processData;
           if (executionInfo.result === NodeExecutionResult.Error) {
             const errorMsg = `Error while runnint node: ${node.id} of type:${node.type} and subtype:${node.subtype}`;
             this.loggerService.log(
@@ -290,9 +324,10 @@ export class EngineManagerService implements IEngineManagerService {
           );
           nodesToExecute.splice(0, 1);
           if (executionInfo.result === NodeExecutionResult.Finished) {
-            const nextNodes: ProcessVersionNode[] = this.getNextNodes(
+            const nextNodes: ProcessVersionNode[] = await this.getNextNodes(
               node.id,
               processVersion,
+              processData,
             );
             for (let i = 0; i < nextNodes.length; i++) {
               const newNodeToExecute: ExecutionQueueEntity = {
@@ -319,6 +354,8 @@ export class EngineManagerService implements IEngineManagerService {
               'Node execution idle. Waiting for webhook trigger to continue',
             );
           }
+          processInstance.data = processData;
+          this.processInstanceRepositoryService.update(processInstance);
           this.processInstanceActivityRepositoryService.update(
             processInstanceActivity,
           );

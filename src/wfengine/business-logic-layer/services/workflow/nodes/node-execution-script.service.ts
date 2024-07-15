@@ -8,6 +8,7 @@ import { NodeDataScript } from 'src/wfengine/entities/service-entities/workflow/
 import { ScriptEntity } from 'src/wfengine/entities/data-entities/script.data.entity';
 import { IScriptRepositoryService } from 'src/wfengine/data-access-layer/repositories/interfaces/script-repository.interface';
 import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
+import axios from 'axios';
 
 @Injectable()
 export class NodeExecutionScript implements INodeExecution {
@@ -40,19 +41,42 @@ export class NodeExecutionScript implements INodeExecution {
         ' nodeID: ' +
         nodeId,
     );
-
     //begin dynamic code execution
     const scriptData: NodeDataScript = nodeData as NodeDataScript;
+    const params = scriptData.params;
     const scriptEntity: ScriptEntity = await this.scriptRepositoryService.find(
       scriptData.scriptId,
     );
-    const executeCode = new Function(scriptEntity.code);
-    executeCode();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const vm = require('node:vm');
+    const context = {
+      axios,
+      console,
+      processData,
+    };
+    vm.createContext(context);
+    const paramsCode = params
+      ? 'const params = JSON.parse(`' + JSON.stringify(params) + '`);\n '
+      : '';
+    const code = paramsCode + scriptEntity.code;
+    this.loggerService.log(
+      'WF Engine Execution - ' + instanceId,
+      'Code to execute: ' + code,
+    );
+    const scriptResult = await vm.runInContext(code, context);
     this.loggerService.log(
       'WF Engine Execution - ' + instanceId,
       'Script executed successfully',
     );
+    this.loggerService.log(
+      'WF Engine Execution - ' + instanceId,
+      'Script result: ' + JSON.stringify(scriptResult),
+    );
     //end dynamic code execution
+
+    if (scriptResult) {
+      processData = { ...processData, ...scriptResult };
+    }
 
     const outInfo = new NodeExecutionOutInfo();
     outInfo.result = NodeExecutionResult.Finished;

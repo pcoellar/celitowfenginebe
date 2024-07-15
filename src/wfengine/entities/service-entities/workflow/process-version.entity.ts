@@ -15,6 +15,7 @@ export class ProcessVersionSequenceFlow {
   id: string;
   initNode: string;
   endNode: string;
+  condition?: string;
   createdDate?: Date;
   lastModified?: Date;
 }

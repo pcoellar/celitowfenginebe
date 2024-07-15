@@ -13,9 +13,10 @@ export class ProcessInstanceResponseParser {
       start: processInstance.start,
       end: processInstance.end,
       status: processInstance.status,
+      data: processInstance.data,
       createdDate: processInstance.createdDate,
       lastModified: processInstance.lastModified,
-      processInstanceActivitiesResponse: [],
+      processInstanceActivities: [],
     };
     const processInstanceActivityResponseParser =
       new ProcessInstanceActivityResponseParser();
@@ -24,7 +25,7 @@ export class ProcessInstanceResponseParser {
         processInstanceActivityResponseParser.ParseToProcessInstanceActivityResponseDto(
           processInstance.processInstanceActivities[i],
         );
-      result.processInstanceActivitiesResponse.push(activity);
+      result.processInstanceActivities.push(activity);
     }
 
     return result;

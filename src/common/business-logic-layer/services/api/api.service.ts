@@ -28,4 +28,28 @@ export class ApiService implements IApiService {
       throw error;
     }
   }
+  async put(url: string, body: any): Promise<any> {
+    try {
+      const response = await axios.put(url, body);
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Error updating data. Url: ' + url + ' Error:',
+        error.message,
+      );
+      throw error;
+    }
+  }
+  async delete(url: string) {
+    try {
+      const response = await axios.delete(url);
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Error deleting data. Url: ' + url + ' Error:',
+        error.message,
+      );
+      throw error;
+    }
+  }
 }

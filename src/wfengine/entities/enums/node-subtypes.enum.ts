@@ -5,4 +5,5 @@ export enum NodeSubTypes {
   Timer = 'timer',
   SignalThrow = 'signal_throw',
   SignalCatch = 'signal_catch',
+  GatewayExclusive = 'gateway_exclusive',
 }

@@ -16,6 +16,8 @@ export class ProcessInstanceEntity extends AuditableDataEntity {
   end: Date;
   @Column('varchar', { length: 20, nullable: false })
   status: Status;
+  @Column('json', { nullable: true })
+  data: any;
   @OneToMany(
     () => ProcessInstanceActivityEntity,
     (processInstanceActivity) => processInstanceActivity.processInstance,

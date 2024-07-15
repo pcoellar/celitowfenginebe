@@ -12,6 +12,7 @@ export class ProcessInstanceRequestParser {
       start: processInstanceRequest.start,
       end: processInstanceRequest.end,
       status: processInstanceRequest.status,
+      data: processInstanceRequest.data,
     };
     return processInstance;
   }

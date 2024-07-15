@@ -7,10 +7,10 @@ import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/wor
 import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
 
 @Injectable()
-export class NodeExecutionEventUndefined implements INodeExecution {
+export class NodeExecutionGateway implements INodeExecution {
   constructor(private readonly loggerService: ILoggerService) {}
   canExecute(type: NodeTypes, subtype: NodeSubTypes): boolean {
-    if (type === NodeTypes.Event && subtype === NodeSubTypes.Undefined) {
+    if (type === NodeTypes.Gateway && subtype) {
       return true;
     }
     return false;
@@ -24,7 +24,7 @@ export class NodeExecutionEventUndefined implements INodeExecution {
   ): Promise<NodeExecutionOutInfo> {
     this.loggerService.log(
       'WF Engine Execution - ' + instanceId,
-      'Node execution event undefined. nodeData: ' +
+      'Node execution gateway. nodeData: ' +
         JSON.stringify(nodeData) +
         ' processData: ' +
         JSON.stringify(processData) +

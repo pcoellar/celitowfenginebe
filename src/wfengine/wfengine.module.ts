@@ -50,6 +50,18 @@ import { ScriptRepositoryService } from './data-access-layer/repositories/script
 import { ScriptEntity } from './entities/data-entities/script.data.entity';
 import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
 import { LoggerService } from 'src/common/business-logic-layer/services/logger/logger.service';
+import { ScriptController } from './presentation-layer/controllers/script.controller';
+import { IUpdateScriptService } from './business-logic-layer/usecases/interfaces/script/update-script.interface';
+import { UpdateScriptService } from './business-logic-layer/usecases/script/update-script.service';
+import { IDeleteScriptService } from './business-logic-layer/usecases/interfaces/script/delete-script.interface';
+import { DeleteScriptService } from './business-logic-layer/usecases/script/delete-script.service';
+import { IAddScriptService } from './business-logic-layer/usecases/interfaces/script/add-script.interface';
+import { AddScriptService } from './business-logic-layer/usecases/script/add-script.service';
+import { IGetAllScriptService } from './business-logic-layer/usecases/interfaces/script/get-all-script.interface';
+import { GetAllScriptService } from './business-logic-layer/usecases/script/get-all-script.service';
+import { IGetScriptService } from './business-logic-layer/usecases/interfaces/script/get-script.interface';
+import { GetScriptService } from './business-logic-layer/usecases/script/get-script.service';
+import { NodeExecutionGateway } from './business-logic-layer/services/workflow/nodes/node-execution-gateway.service';
 
 @Module({
   imports: [
@@ -134,6 +146,26 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
       provide: IExecutionQueueRepositoryService,
       useClass: ExecutionQueueRepositoryService,
     },
+    {
+      provide: IGetAllScriptService,
+      useClass: GetAllScriptService,
+    },
+    {
+      provide: IGetScriptService,
+      useClass: GetScriptService,
+    },
+    {
+      provide: IAddScriptService,
+      useClass: AddScriptService,
+    },
+    {
+      provide: IUpdateScriptService,
+      useClass: UpdateScriptService,
+    },
+    {
+      provide: IDeleteScriptService,
+      useClass: DeleteScriptService,
+    },
     NodeExecutionAsignUser,
     NodeExecutionEventUndefined,
     NodeExecutionScript,
@@ -141,6 +173,7 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
     NodeExecutionSignalCatch,
     NodeExecutionTaskUndefined,
     NodeExecutionTimer,
+    NodeExecutionGateway,
     {
       provide: 'NODES_EXECUTORS',
       useFactory: (
@@ -151,6 +184,7 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
         NodeExecutionSignalCatch: NodeExecutionSignalCatch,
         nodeExecutionTaskUndefined: NodeExecutionTaskUndefined,
         nodeExecutionTimer: NodeExecutionTimer,
+        NodeExecutionGateway: NodeExecutionGateway,
       ) => [
         nodeExecutionAsignUser,
         nodeExecutionEventUndefined,
@@ -159,6 +193,7 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
         NodeExecutionSignalCatch,
         nodeExecutionTaskUndefined,
         nodeExecutionTimer,
+        NodeExecutionGateway,
       ],
       inject: [
         NodeExecutionAsignUser,
@@ -168,6 +203,7 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
         NodeExecutionSignalCatch,
         NodeExecutionTaskUndefined,
         NodeExecutionTimer,
+        NodeExecutionGateway,
       ],
     },
     ConfigService,
@@ -176,6 +212,7 @@ import { LoggerService } from 'src/common/business-logic-layer/services/logger/l
     ProcessInstanceController,
     ProcessInstanceActivityController,
     WFEngineController,
+    ScriptController,
   ],
   exports: [],
 })

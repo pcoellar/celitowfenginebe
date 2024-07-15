@@ -7,4 +7,5 @@ export class ProcessInstanceRequestDto {
   start: Date;
   end: Date;
   status: Status;
+  data?: any;
 }

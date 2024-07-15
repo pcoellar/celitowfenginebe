@@ -8,7 +8,8 @@ export class ProcessInstanceResponseDto {
   start: Date;
   end: Date;
   status: Status;
+  data?: any;
   createdDate?: Date;
   lastModified?: Date;
-  processInstanceActivitiesResponse: ProcessInstanceActivityResponseDto[];
+  processInstanceActivities: ProcessInstanceActivityResponseDto[];
 }
