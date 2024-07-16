@@ -105,49 +105,43 @@ export class EngineManagerService implements IEngineManagerService {
     );
     const processInstanceActivities = [];
 
-    const cacheClient = this.cacheService.createClient();
-    //Connect to cache
-    await this.cacheService.connect(cacheClient);
-
-    const processJson: string = await this.cacheService.get(
-      cacheClient,
-      request.processId,
-    );
+    const processJson: string = await this.cacheService.get(request.processId);
+    console.log('processJson: ', processJson);
     let process: Process = null;
     if (processJson) {
+      this.loggerService.log('WF Engine Execution', 'Process info from cache');
       process = JSON.parse(processJson);
     } else {
+      this.loggerService.log('WF Engine Execution', 'Process info from API');
       process = await this.apiService.get(
         `${this.designerBaseUrl}processes/${request.processId}`,
       );
-      this.cacheService.set(
-        cacheClient,
-        request.processId,
-        JSON.stringify(process),
-      );
+      this.cacheService.set(request.processId, JSON.stringify(process));
     }
 
     const processVersionId: string = process.currentVersion;
-    const processVersionJson: string = await this.cacheService.get(
-      cacheClient,
-      processVersionId,
-    );
+    const processVersionJson: string =
+      await this.cacheService.get(processVersionId);
     let processVersion = null;
     if (processVersionJson) {
+      this.loggerService.log(
+        'WF Engine Execution',
+        'Process Version info from cache',
+      );
       processVersion = JSON.parse(processVersionJson);
     } else {
+      this.loggerService.log(
+        'WF Engine Execution',
+        'Process Version info from API',
+      );
       processVersion = await this.apiService.get(
         `${this.designerBaseUrl}processes_version/${processVersionId}`,
       );
       await this.cacheService.set(
-        cacheClient,
         processVersionId,
         JSON.stringify(processVersion),
       );
     }
-
-    // Disconnect from Cache
-    this.cacheService.disconnect(cacheClient);
 
     const newProcessInstanceId: string = uuidv4();
     const processInstance = await this.processInstanceRepositoryService.create({

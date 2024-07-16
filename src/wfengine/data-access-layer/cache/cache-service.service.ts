@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ICacheService } from './interfaces/cache-service.interface';
 import { ConfigService } from '@nestjs/config';
-import redis from 'redis';
 
 @Injectable()
 export class CacheService implements ICacheService {
-  constructor(private readonly configService: ConfigService) {}
+  private cacheClient;
+  constructor(private readonly configService: ConfigService) {
+    this.cacheClient = this.createClient();
+    this.cacheClient.connect();
+  }
 
   private cacheHostName: string = this.configService.get(
     'AZURE_CACHE_FOR_REDIS_HOST_NAME',
@@ -15,27 +18,29 @@ export class CacheService implements ICacheService {
   );
 
   createClient(): any {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const redis = require('redis');
     const cacheClient = redis.createClient({
       // redis for TLS
-      url: `redis://${this.cacheHostName}:6380`,
+      url: `redis://${this.cacheHostName}:6379`,
       password: this.cachePassword,
     });
     return cacheClient;
   }
 
-  async connect(cacheClient: any) {
-    await cacheClient.connect();
+  async connect() {
+    await this.cacheClient.connect();
   }
 
-  async disconnect(cacheClient: any) {
-    await cacheClient.connect();
+  async disconnect() {
+    await this.cacheClient.connect();
   }
 
-  async get(cacheClient: any, key: string): Promise<string> {
-    return await cacheClient.get(key);
+  async get(key: string): Promise<string> {
+    return await this.cacheClient.get(key);
   }
 
-  async set(cacheClient: any, key: string, value: string) {
-    await cacheClient.set(key, value);
+  async set(key: string, value: string) {
+    await this.cacheClient.set(key, value);
   }
 }
