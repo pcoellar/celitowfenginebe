@@ -4,6 +4,10 @@ import { Repository } from 'typeorm';
 import { AuditableFieldsManager } from 'src/common/business-logic-layer/services/audit/utils';
 import { ProcessInstanceActivityEntity } from 'src/wfengine/entities/data-entities/process-instance-activity.data.entity';
 import { IProcessInstanceActivityRepositoryService } from './interfaces/process-instance-activity-repository.interface';
+import { IEngineEventService } from 'src/wfengine/business-logic-layer/services/workflow/interfaces/engine-event.interface';
+import { EventInfoActivity } from 'src/wfengine/entities/service-entities/workflow/event-info-activity.entity';
+import { EventInfoActivityParser } from 'src/wfengine/entities/service-entities/workflow/parsers/event-info-activity.dto.parser';
+import { EventTypes } from 'src/wfengine/entities/enums/event-types.enum';
 
 @Injectable()
 export class ProcessInstanceActivityRepositoryService
@@ -12,6 +16,7 @@ export class ProcessInstanceActivityRepositoryService
   constructor(
     @InjectRepository(ProcessInstanceActivityEntity)
     private readonly entityRepository: Repository<ProcessInstanceActivityEntity>,
+    private readonly engineEventService: IEngineEventService,
   ) {}
 
   async findAll(
@@ -60,6 +65,15 @@ export class ProcessInstanceActivityRepositoryService
     entity = auditableFieldsManager.IncludeAuditableFieldsOnCreate(entity);
     const data = this.entityRepository.create(entity);
     const result = await this.entityRepository.save(data);
+
+    const eventInfoActivityParser = new EventInfoActivityParser();
+    const eventInfoActivity: EventInfoActivity =
+      eventInfoActivityParser.ParseToEventInfoActivity(result);
+    this.engineEventService.Publish(
+      EventTypes.OnActivityCreated,
+      eventInfoActivity,
+    );
+
     return result;
   }
 
@@ -80,6 +94,15 @@ export class ProcessInstanceActivityRepositoryService
     };
     const result: ProcessInstanceActivityEntity =
       await this.entityRepository.save(entityToModify);
+
+    const eventInfoActivityParser = new EventInfoActivityParser();
+    const eventInfoActivity: EventInfoActivity =
+      eventInfoActivityParser.ParseToEventInfoActivity(result);
+    this.engineEventService.Publish(
+      EventTypes.OnActivityUpdated,
+      eventInfoActivity,
+    );
+
     return result;
   }
 }

@@ -64,6 +64,10 @@ import { GetScriptService } from './business-logic-layer/usecases/script/get-scr
 import { NodeExecutionGateway } from './business-logic-layer/services/workflow/nodes/node-execution-gateway.service';
 import { ICacheService } from './data-access-layer/cache/interfaces/cache-service.interface';
 import { CacheService } from './data-access-layer/cache/cache-service.service';
+import { IEngineEventService } from './business-logic-layer/services/workflow/interfaces/engine-event.interface';
+import { EngineEventService } from './business-logic-layer/services/workflow/engine-event.service';
+import { IQueueService } from 'src/common/business-logic-layer/services/queue/interfaces/queue.interface';
+import { QueueService } from 'src/common/business-logic-layer/services/queue/queue.service';
 
 @Module({
   imports: [
@@ -171,6 +175,14 @@ import { CacheService } from './data-access-layer/cache/cache-service.service';
     {
       provide: ICacheService,
       useClass: CacheService,
+    },
+    {
+      provide: IEngineEventService,
+      useClass: EngineEventService,
+    },
+    {
+      provide: IQueueService,
+      useClass: QueueService,
     },
     NodeExecutionAsignUser,
     NodeExecutionEventUndefined,
