@@ -62,6 +62,8 @@ import { GetAllScriptService } from './business-logic-layer/usecases/script/get-
 import { IGetScriptService } from './business-logic-layer/usecases/interfaces/script/get-script.interface';
 import { GetScriptService } from './business-logic-layer/usecases/script/get-script.service';
 import { NodeExecutionGateway } from './business-logic-layer/services/workflow/nodes/node-execution-gateway.service';
+import { ICacheService } from './data-access-layer/cache/interfaces/cache-service.interface';
+import { CacheService } from './data-access-layer/cache/cache-service.service';
 
 @Module({
   imports: [
@@ -165,6 +167,10 @@ import { NodeExecutionGateway } from './business-logic-layer/services/workflow/n
     {
       provide: IDeleteScriptService,
       useClass: DeleteScriptService,
+    },
+    {
+      provide: ICacheService,
+      useClass: CacheService,
     },
     NodeExecutionAsignUser,
     NodeExecutionEventUndefined,

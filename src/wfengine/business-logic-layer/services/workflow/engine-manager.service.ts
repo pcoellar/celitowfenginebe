@@ -26,6 +26,7 @@ import { EnginePauseRequestDto } from 'src/wfengine/entities/dto-entities/engine
 import { EngineContinueRequestDto } from 'src/wfengine/entities/dto-entities/engine-continue-request.dto.entity';
 import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
 import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
+import { ICacheService } from 'src/wfengine/data-access-layer/cache/interfaces/cache-service.interface';
 
 @Injectable()
 export class EngineManagerService implements IEngineManagerService {
@@ -38,6 +39,7 @@ export class EngineManagerService implements IEngineManagerService {
     private readonly apiService: IApiService,
     private readonly configService: ConfigService,
     private readonly loggerService: ILoggerService,
+    private readonly cacheService: ICacheService,
   ) {}
 
   private designerBaseUrl: string = this.configService.get(
@@ -102,13 +104,51 @@ export class EngineManagerService implements IEngineManagerService {
       'Workflow started. Request: ' + JSON.stringify(request),
     );
     const processInstanceActivities = [];
-    const process: Process = await this.apiService.get(
-      `${this.designerBaseUrl}processes/${request.processId}`,
+
+    const cacheClient = this.cacheService.createClient();
+    //Connect to cache
+    await this.cacheService.connect(cacheClient);
+
+    const processJson: string = await this.cacheService.get(
+      cacheClient,
+      request.processId,
     );
+    let process: Process = null;
+    if (processJson) {
+      process = JSON.parse(processJson);
+    } else {
+      process = await this.apiService.get(
+        `${this.designerBaseUrl}processes/${request.processId}`,
+      );
+      this.cacheService.set(
+        cacheClient,
+        request.processId,
+        JSON.stringify(process),
+      );
+    }
+
     const processVersionId: string = process.currentVersion;
-    const processVersion = await this.apiService.get(
-      `${this.designerBaseUrl}processes_version/${processVersionId}`,
+    const processVersionJson: string = await this.cacheService.get(
+      cacheClient,
+      processVersionId,
     );
+    let processVersion = null;
+    if (processVersionJson) {
+      processVersion = JSON.parse(processVersionJson);
+    } else {
+      processVersion = await this.apiService.get(
+        `${this.designerBaseUrl}processes_version/${processVersionId}`,
+      );
+      await this.cacheService.set(
+        cacheClient,
+        processVersionId,
+        JSON.stringify(processVersion),
+      );
+    }
+
+    // Disconnect from Cache
+    this.cacheService.disconnect(cacheClient);
+
     const newProcessInstanceId: string = uuidv4();
     const processInstance = await this.processInstanceRepositoryService.create({
       id: newProcessInstanceId,
