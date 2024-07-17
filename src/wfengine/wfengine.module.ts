@@ -68,6 +68,9 @@ import { IEngineEventService } from './business-logic-layer/services/workflow/in
 import { EngineEventService } from './business-logic-layer/services/workflow/engine-event.service';
 import { IQueueService } from 'src/common/business-logic-layer/services/queue/interfaces/queue.interface';
 import { QueueService } from 'src/common/business-logic-layer/services/queue/queue.service';
+import { IEngineQueueService } from './business-logic-layer/services/workflow/interfaces/engine-queue.interface';
+import { EngineQueueService } from './business-logic-layer/services/workflow/engine-queue.service';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -76,6 +79,21 @@ import { QueueService } from 'src/common/business-logic-layer/services/queue/que
       ProcessInstanceActivityEntity,
       ExecutionQueueEntity,
       ScriptEntity,
+    ]),
+    ClientsModule.register([
+      {
+        name: 'WF_QUEUE_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [
+            'amqps://friealvy:8B03SnCyq_330MdGaLR5jkBkZY6iEtym@fly.rmq.cloudamqp.com/friealvy',
+          ],
+          queue: 'wf_queue',
+          queueOptions: {
+            durable: false,
+          },
+        },
+      },
     ]),
     CommonModule,
   ],
@@ -179,6 +197,10 @@ import { QueueService } from 'src/common/business-logic-layer/services/queue/que
     {
       provide: IEngineEventService,
       useClass: EngineEventService,
+    },
+    {
+      provide: IEngineQueueService,
+      useClass: EngineQueueService,
     },
     {
       provide: IQueueService,

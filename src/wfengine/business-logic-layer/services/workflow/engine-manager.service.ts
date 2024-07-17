@@ -27,6 +27,12 @@ import { EngineContinueRequestDto } from 'src/wfengine/entities/dto-entities/eng
 import { NodeExecutionOutInfo } from 'src/wfengine/entities/service-entities/workflow/node-execution-out-info.entity';
 import { ILoggerService } from 'src/common/business-logic-layer/services/logger/interfaces/logger.interface';
 import { ICacheService } from 'src/wfengine/data-access-layer/cache/interfaces/cache-service.interface';
+import { IEngineEventService } from './interfaces/engine-event.interface';
+import { EventInfoInstanceParser } from 'src/wfengine/entities/service-entities/workflow/parsers/event-info-instance.dto.parser';
+import { EventInfoInstance } from 'src/wfengine/entities/service-entities/workflow/event-info-instance.entity';
+import { EventTypes } from 'src/wfengine/entities/enums/event-types.enum';
+import { EventInfoActivityParser } from 'src/wfengine/entities/service-entities/workflow/parsers/event-info-activity.dto.parser';
+import { EventInfoActivity } from 'src/wfengine/entities/service-entities/workflow/event-info-activity.entity';
 
 @Injectable()
 export class EngineManagerService implements IEngineManagerService {
@@ -40,6 +46,7 @@ export class EngineManagerService implements IEngineManagerService {
     private readonly configService: ConfigService,
     private readonly loggerService: ILoggerService,
     private readonly cacheService: ICacheService,
+    private readonly engineEventService: IEngineEventService,
   ) {}
 
   private designerBaseUrl: string = this.configService.get(
@@ -98,6 +105,26 @@ export class EngineManagerService implements IEngineManagerService {
     return nodes;
   }
 
+  private publishEventInstance(
+    eventType: EventTypes,
+    processInstance: ProcessInstanceEntity,
+  ) {
+    const eventInfoInstanceParser = new EventInfoInstanceParser();
+    const eventInfoInstance: EventInfoInstance =
+      eventInfoInstanceParser.ParseToEventInfoInstance(processInstance);
+    this.engineEventService.publish(eventType, eventInfoInstance);
+  }
+
+  private publishEventActivity(
+    eventType: EventTypes,
+    processInstanceActivity: ProcessInstanceActivityEntity,
+  ) {
+    const eventInfoActivityParser = new EventInfoActivityParser();
+    const eventInfoActivity: EventInfoActivity =
+      eventInfoActivityParser.ParseToEventInfoActivity(processInstanceActivity);
+    this.engineEventService.publish(eventType, eventInfoActivity);
+  }
+
   async start(request: EngineStartRequestDto): Promise<EngineResponseDto> {
     this.loggerService.log(
       'WF Engine Execution',
@@ -106,7 +133,6 @@ export class EngineManagerService implements IEngineManagerService {
     const processInstanceActivities = [];
 
     const processJson: string = await this.cacheService.get(request.processId);
-    console.log('processJson: ', processJson);
     let process: Process = null;
     if (processJson) {
       this.loggerService.log('WF Engine Execution', 'Process info from cache');
@@ -155,6 +181,7 @@ export class EngineManagerService implements IEngineManagerService {
       processInstanceActivities: null,
       processInstanceExecutionQueue: null,
     });
+    this.publishEventInstance(EventTypes.OnInstanceCreated, processInstance);
     this.loggerService.log(
       'WF Engine Execution - ' + processInstance.id,
       'Instance created. Process instance: ' + JSON.stringify(processInstance),
@@ -220,6 +247,10 @@ export class EngineManagerService implements IEngineManagerService {
     this.processInstanceActivityRepositoryService.update(
       processInstanceActivity,
     );
+    this.publishEventActivity(
+      EventTypes.OnActivityUpdated,
+      processInstanceActivity,
+    );
     processInstanceActivities.push(processInstanceActivity);
 
     const processData = processInstance.data;
@@ -255,6 +286,7 @@ export class EngineManagerService implements IEngineManagerService {
     );
     processInstance.status = Status.Paused;
     await this.processInstanceRepositoryService.update(processInstance);
+    this.publishEventInstance(EventTypes.OnInstanceUpdated, processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance:
@@ -274,6 +306,7 @@ export class EngineManagerService implements IEngineManagerService {
     );
     processInstance.status = Status.Pending;
     await this.processInstanceRepositoryService.update(processInstance);
+    this.publishEventInstance(EventTypes.OnInstanceUpdated, processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance:
@@ -291,6 +324,7 @@ export class EngineManagerService implements IEngineManagerService {
     );
     processInstance.status = Status.Aborted;
     await this.processInstanceRepositoryService.update(processInstance);
+    this.publishEventInstance(EventTypes.OnInstanceUpdated, processInstance);
     const engineResponseParser = new EngineResponseParser();
     return {
       processInstance:
@@ -333,6 +367,10 @@ export class EngineManagerService implements IEngineManagerService {
           processInstance: processInstance,
           nodeData: node.data,
         });
+      this.publishEventActivity(
+        EventTypes.OnActivityCreated,
+        processInstanceActivity,
+      );
       let executed = false;
       for (let i = 0; i < this.nodesExecutors.length; i++) {
         if (this.nodesExecutors[i].canExecute(node.type, node.subtype)) {
@@ -390,7 +428,15 @@ export class EngineManagerService implements IEngineManagerService {
           }
           processInstance.data = processData;
           this.processInstanceRepositoryService.update(processInstance);
+          this.publishEventInstance(
+            EventTypes.OnInstanceUpdated,
+            processInstance,
+          );
           this.processInstanceActivityRepositoryService.update(
+            processInstanceActivity,
+          );
+          this.publishEventActivity(
+            EventTypes.OnActivityUpdated,
             processInstanceActivity,
           );
           processInstanceActivities.push(processInstanceActivity);
@@ -410,6 +456,7 @@ export class EngineManagerService implements IEngineManagerService {
       processInstance.end = new Date();
       processInstance.status = Status.Completed;
       this.processInstanceRepositoryService.update(processInstance);
+      this.publishEventInstance(EventTypes.OnInstanceUpdated, processInstance);
       this.loggerService.log(
         'WF Engine Execution - ' + processInstance.id,
         'Process instance completed, reached end of process',

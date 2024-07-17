@@ -4,10 +4,6 @@ import { Repository } from 'typeorm';
 import { AuditableFieldsManager } from 'src/common/business-logic-layer/services/audit/utils';
 import { IProcessInstanceRepositoryService } from './interfaces/process-instance-repository.interface';
 import { ProcessInstanceEntity } from 'src/wfengine/entities/data-entities/process-instance.data.entity';
-import { IEngineEventService } from 'src/wfengine/business-logic-layer/services/workflow/interfaces/engine-event.interface';
-import { EventInfoInstanceParser } from 'src/wfengine/entities/service-entities/workflow/parsers/event-info-instance.dto.parser';
-import { EventInfoInstance } from 'src/wfengine/entities/service-entities/workflow/event-info-instance.entity';
-import { EventTypes } from 'src/wfengine/entities/enums/event-types.enum';
 
 @Injectable()
 export class ProcessInstanceRepositoryService
@@ -16,7 +12,6 @@ export class ProcessInstanceRepositoryService
   constructor(
     @InjectRepository(ProcessInstanceEntity)
     private readonly entityRepository: Repository<ProcessInstanceEntity>,
-    private readonly engineEventService: IEngineEventService,
   ) {}
 
   async findAll(relations?: string[]): Promise<ProcessInstanceEntity[]> {
@@ -56,15 +51,6 @@ export class ProcessInstanceRepositoryService
     entity = auditableFieldsManager.IncludeAuditableFieldsOnCreate(entity);
     const data = this.entityRepository.create(entity);
     const result = await this.entityRepository.save(data);
-
-    const eventInfoInstanceParser = new EventInfoInstanceParser();
-    const eventInfoInstance: EventInfoInstance =
-      eventInfoInstanceParser.ParseToEventInfoInstance(result);
-    this.engineEventService.Publish(
-      EventTypes.OnInstanceCreated,
-      eventInfoInstance,
-    );
-
     return result;
   }
 
@@ -83,15 +69,6 @@ export class ProcessInstanceRepositoryService
     };
     const result: ProcessInstanceEntity =
       await this.entityRepository.save(entityToModify);
-
-    const eventInfoInstanceParser = new EventInfoInstanceParser();
-    const eventInfoInstance: EventInfoInstance =
-      eventInfoInstanceParser.ParseToEventInfoInstance(result);
-    this.engineEventService.Publish(
-      EventTypes.OnInstanceUpdated,
-      eventInfoInstance,
-    );
-
     return result;
   }
 }
